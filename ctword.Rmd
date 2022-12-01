@@ -1,0 +1,88 @@
+---
+output: word_document
+params:
+  report.data: 
+  table: [some object]
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+ 
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(here)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r loaddata}
+
+df <- read_csv(params$report.data)
+ 
+```
+
+```{r formatdf}
+
+df <- df %>%
+  
+  mutate(Results_URL = `NCT Number`) %>%
+  
+  mutate(URL = str_replace(URL, "^", "(")) %>%
+  mutate(URL = str_replace(URL, "$", ")")) %>%
+  mutate(Title = str_replace(Title, "^", "**Title:** [")) %>%
+  mutate(Title = str_replace(Title, "$", "]")) %>%
+  unite(Title, Title, URL, sep = "", na.rm=TRUE) %>%
+
+  mutate(`NCT Number` = str_replace(`NCT Number`, "^", "**Study number:** ")) %>%
+
+  mutate(`Other IDs` = str_replace_all(`Other IDs`, "\\|", "; ")) %>%
+  unite(`Other IDs`, `Other IDs`, Acronym, sep = "; ", na.rm=TRUE) %>%
+  mutate(`Other IDs` = str_replace(`Other IDs`, "^", "**Alternative names or numbers:** ")) %>%
+
+  mutate(Phases = str_replace_all(Phases, "\\|", "/")) %>%
+  mutate(Phases = str_replace(Phases, "^", "**Phase:** ")) %>%
+
+  mutate(MoP = "**Methods or purpose:** *(if not clear from title)*") %>%
+  mutate(Population = "**Population:** ") %>%
+
+  mutate(Enrollment = str_replace(Enrollment, "^", "**No. of patients:** ")) %>%
+
+  mutate(`Outcome Measures` = str_replace_all(`Outcome Measures`, "\\|", "\n\n •")) %>%
+  mutate(`Outcome Measures` = str_replace(`Outcome Measures`, "^", "**Primary outcome(s):** \n\n •")) %>%
+    
+  mutate(Status = str_replace(Status, "^", "**Status:** ")) %>%
+
+  mutate(`Start Date`=format(mdy(`Start Date`),"%B %Y"))%>%
+  mutate(`Primary Completion Date`=format(mdy(`Primary Completion Date`),"%B %Y")) %>%
+  mutate(`Completion Date`=format(mdy(`Completion Date`),"%B %Y")) %>%
+
+  mutate(`Start Date` = str_replace_na(`Start Date`, "Not stated")) %>%
+  mutate(`Start Date` = str_replace(`Start Date`, "^", "**Start date:** ")) %>%
+  
+  mutate(`Primary Completion Date` = str_replace_na(`Primary Completion Date`, "Not stated")) %>%
+  mutate(`Primary Completion Date` = str_replace(`Primary Completion Date`, "^", "**Primary completion date:** ")) %>%
+
+  mutate(`Completion Date` = str_replace_na(`Completion Date`, "Not stated")) %>%
+  mutate(`Completion Date` = str_replace(`Completion Date`, "^", "**Study completion date:** "))
+
+df$Results_URL <- c("https://clinicaltrials.gov/ct2/show/results/")
+
+df$Results_URL <- paste0("**Results**: [Available](https://clinicaltrials.gov/ct2/show/results/", df$`NCT Number`,")")
+
+df$Results_URL[df$`Study Results` !="Has Results"]<-paste0("**Results**: not available at clinicaltrials.gov")   
+
+df$blank <-c("\\")  
+
+
+df <- select(df, Title, `NCT Number`, `Other IDs`, Phases, MoP, Population, Enrollment, `Outcome Measures`, Status, `Start Date`, `Primary Completion Date`, `Completion Date`, Results_URL, blank) 
+
+
+kable(df[1:14], col.names = NULL) 
+```
+
+

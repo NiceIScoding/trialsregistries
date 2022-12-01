@@ -1,0 +1,108 @@
+---
+output: word_document
+params:
+  report.data: NA
+  table: [some object]
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+ 
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(here)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r loaddata}
+
+df <- read_csv(params$report.data)
+ 
+```
+
+```{r formatdf}
+
+
+df <- df 
+
+df <- df %>%
+  
+  mutate(URL = ISRCTN) %>%
+  mutate(URL = str_replace(URL,"^", "https://www.isrctn.com/")) %>%
+  mutate(URL = str_replace(URL, "^", "("))%>%
+  mutate(URL = str_replace(URL, "$", ")"))%>%
+  mutate(Title = str_replace(Title, "^", "**Title:** [")) %>%
+  mutate(Title = str_replace(Title, "$", "]")) %>%
+  unite(Title, Title, URL, sep = "", na.rm=TRUE, remove = FALSE) %>%
+
+mutate(ISRCTN = str_replace(ISRCTN, "^", "**Study number:** ")) %>%
+
+mutate(`EudraCT number`= na_if(`EudraCT number`,"Nil known"))  %>%
+mutate(`IRAS number` = na_if(`IRAS number`, "Nil known")) %>%
+mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil known")) %>%
+
+mutate(`EudraCT number`= na_if(`EudraCT number`,"Nil Known"))  %>%
+mutate(`IRAS number` = na_if(`IRAS number`, "Nil Known")) %>%
+mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil Known")) %>% 
+  
+mutate(`EudraCT number`= na_if(`EudraCT number`,"N/A"))  %>%
+mutate(`IRAS number` = na_if(`IRAS number`, "N/A")) %>%
+mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "N/A")) %>%
+  
+mutate(`EudraCT number`= na_if(`EudraCT number`,"Nil known."))  %>%
+mutate(`IRAS number` = na_if(`IRAS number`, "Nil known.")) %>%
+mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil known.")) %>%  
+  
+mutate(`EudraCT number`= na_if(`EudraCT number`,""))  %>%
+mutate(`IRAS number` = na_if(`IRAS number`, "")) %>%
+mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "")) %>%
+    
+unite(`EudraCT number`, `EudraCT number`, `IRAS number`,`ClinicalTrials.gov number` , sep = "; ", na.rm=TRUE) %>%
+mutate(`EudraCT number` = case_when(`EudraCT number`== "" ~ "Not stated",
+TRUE ~ `EudraCT number`))  %>%
+mutate(`EudraCT number` = str_replace(`EudraCT number`, "^", "**Alternative names or numbers:** ")) %>%
+
+mutate(Phase = str_replace_all(Phase, "Not Applicable", "Not stated")) %>%
+mutate(Phase = str_replace_na(Phase, "Not stated")) %>%
+mutate(Phase = str_replace(Phase, "^", "**Phase:** ")) %>%
+
+mutate(MoP = "**Methods or purpose:** *(if not clear from title)*") %>%
+  
+mutate(`Age group` = str_replace(`Age group`, "^", "**Population:** ")) %>%
+unite(`Age group`, `Age group`, Gender , sep = "; ", na.rm=TRUE) %>%
+mutate(`Age group` = str_replace(`Age group` , "Both" , "Male and Female")) %>%
+
+mutate(`Target number of participants` = str_replace(`Target number of participants`, "^", "**Participants:** ")) %>%
+   
+mutate(Primary_outcomes = "**Primary outcomes:**") %>%
+
+mutate(`Overall trial status` = str_replace(`Overall trial status`, "^", "**Status:** ")) %>%
+unite(`Overall trial status`, `Overall trial status`, 'Recruitment status', sep = "- ", na.rm=TRUE) %>%
+
+mutate(`Overall trial start`=format(dmy(`Overall trial start`),"%B %Y")) %>%
+mutate(`Overall trial start` = str_replace(`Overall trial start`, "^", "**Start date:** ")) %>%  
+
+mutate(`Primary completion date` = "**Primary completion date:** Not stated" ) %>%  
+
+mutate(`Overall trial end`=format(dmy(`Overall trial end`),"%B %Y")) %>%
+mutate(`Overall trial end` = str_replace(`Overall trial end`, "^", "**Study completion date:** ")) %>%
+  
+mutate(`Basic results...9` = 
+         case_when(is.na(`Basic results...9`) != TRUE ~ paste("**Results**: [Available at ISRCTN]", URL, sep = ""),
+                  (is.na(`Basic results...9`) == TRUE ~ "**Results**: not available at ISRCTN")))
+
+ 
+df$blank <-c("\\")  
+
+  
+df<-select(df,Title,ISRCTN,`EudraCT number`,Phase,MoP,`Age group`,`Target number of participants`,Primary_outcomes, `Overall trial status`, `Overall trial start`,`Primary completion date`,`Overall trial end`,`Basic results...9`, blank)
+
+kable(df[1:14], col.names = NULL) 
+  
+```
